@@ -1,0 +1,368 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>bundleid</key>
+	<string>io.chronosphere.search</string>
+	<key>connections</key>
+	<dict>
+		<key>0FCFC71A-213B-40BF-9BC9-02155788A6FA</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>89A59BE0-BFB5-48CA-A5EC-10E7E839BAA7</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+	</dict>
+	<key>createdby</key>
+	<string></string>
+	<key>description</key>
+	<string>Search Teams, Collections, Dashboards &amp; Monitors</string>
+	<key>disabled</key>
+	<false/>
+	<key>name</key>
+	<string>Chronosphere</string>
+	<key>objects</key>
+	<array>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>alfredfiltersresults</key>
+				<false/>
+				<key>alfredfiltersresultsmatchmode</key>
+				<integer>0</integer>
+				<key>argumenttreatemptyqueryasnil</key>
+				<true/>
+				<key>argumenttrimmode</key>
+				<integer>0</integer>
+				<key>argumenttype</key>
+				<integer>1</integer>
+				<key>escaping</key>
+				<integer>102</integer>
+				<key>keyword</key>
+				<string>{var:KEYWORD}</string>
+				<key>queuedelaycustom</key>
+				<integer>3</integer>
+				<key>queuedelayimmediatelyinitially</key>
+				<true/>
+				<key>queuedelaymode</key>
+				<integer>1</integer>
+				<key>queuemode</key>
+				<integer>1</integer>
+				<key>runningsubtext</key>
+				<string>searching...</string>
+				<key>script</key>
+				<string>"""
+Returns
+{
+  "items": [
+    {
+      "uid": "dashboard-name",
+      "type": "default",
+      "title": "Dashboard Name",
+      "subtitle": "collection-slug",
+      "arg": "https://chronosphere.io/dashboards/dashboard-name",
+      "autocomplete": "Dashboard Name",
+    }
+  ]
+}
+"""
+
+import json
+import sys
+import os
+import urllib.request
+
+if not os.environ.get("CHRONOSPHERE_DOMAIN") or not os.environ.get("CHRONOSPHERE_API_TOKEN"):
+    print(json.dumps({"items": [{"title": "Configure workflow with CHRONOSPHERE_DOMAIN and CHRONOSPHERE_API_TOKEN", "valid": False}]}))
+    sys.exit(1)
+
+CHRONOSPHERE_DOMAIN = os.environ["CHRONOSPHERE_DOMAIN"].rstrip("/").strip()
+CHRONOSPHERE_API_TOKEN = os.environ["CHRONOSPHERE_API_TOKEN"].strip()
+
+gql_query = """
+query Search($input: SearchQuery!) {
+    searchV2(input: $input) {
+        items {
+            type
+            name
+            slug
+            isFavorite
+            isMigratedDashboard
+            team {
+                name
+                slug
+                __typename
+            }
+            collection {
+                name
+                type
+                slug
+                __typename
+            }
+            __typename
+        }
+        totalCount
+        __typename
+    }
+}
+"""
+
+query = sys.argv[1] if len(sys.argv) &gt; 1 else ""
+data = {
+    "query": gql_query,
+    "variables": {
+        "input": {"kindFilter": ["teams", "collections", "dashboards", "monitors"], "query": query},
+    },
+}
+
+# todo: remove this once monitors are better filtered
+# data["variables"]["input"]["kindFilter"] = ["teams", "collections", "dashboards"]
+
+req = urllib.request.Request(
+    f"{CHRONOSPHERE_DOMAIN}/api/v1/gql/query",
+    headers={"API-Token": CHRONOSPHERE_API_TOKEN, "Content-Type": "application/json; charset=utf-8"},
+    data=json.dumps(data).encode("utf-8"),
+    method="POST",
+)
+with urllib.request.urlopen(req) as r:
+   response = r.read()
+
+try:
+	response = json.loads(response)
+except ValueError:
+	print(json.dumps({"items": [{"title": "Failed to parse JSON response", "valid": False}]}))
+	sys.exit(1)
+
+if "data" in response:
+    results = response.get("data", {}).get("searchV2", {}).get("items") or []
+    items = []
+    for item in results:
+        if item["type"] == "dashboards":
+            subtitle = item["team"]["name"]
+            if item.get("collection"):
+                subtitle = f"{subtitle} - {item['collection']['name']}"
+            items.append({
+                "uid": item["slug"],
+                "type": "default",
+                "title": f'Dashboard: {item["name"]}',
+                "subtitle": subtitle,
+                "arg": f"{CHRONOSPHERE_DOMAIN}/dashboards/{item['slug']}",
+                "autocomplete": item["name"],
+            })
+        elif item["type"] == "teams":
+            items.append({
+                "uid": item["slug"],
+                "type": "default",
+                "title": f'Team: {item["name"]}',
+                "subtitle": "Team",
+                "arg": f"{CHRONOSPHERE_DOMAIN}/teams/{item['slug']}",
+                "autocomplete": item["name"],
+            })
+        elif item["type"] == "collections":
+            items.append({
+                "uid": item["slug"],
+                "type": "default",
+                "title": f'Collection: {item["name"]}',
+                "subtitle": item["team"]["name"],
+                "arg": f"{CHRONOSPHERE_DOMAIN}/collections/{item['slug']}",
+                "autocomplete": item["name"],
+            })
+        elif item["type"] == "monitors":
+            subtitle = item["team"]["name"]
+            if item.get("collection"):
+                subtitle = f"{subtitle} - {item['collection']['name']}"
+            items.append({
+                "uid": item["slug"],
+                "type": "default",
+                "title": f'Monitor: {item["name"]}',
+                "subtitle": subtitle,
+                "arg": f"{CHRONOSPHERE_DOMAIN}/monitors/{item['slug']}",
+                "autocomplete": item["name"],
+            })
+else:
+    # No dashboards found, check for error message
+    items = []
+    if "message" in response:
+        items.append({
+            "valid": False,
+            "title": response["message"]
+        })
+
+items += [
+    {
+        "uid": "dashboards",
+        "type": "default",
+        "title": "All Dashboards",
+        "arg": f"{CHRONOSPHERE_DOMAIN}/dashboards/",
+        "autocomplete": "All Dashboards",
+    },
+    {
+        "uid": "teams",
+        "type": "default",
+        "title": "All Teams",
+        "arg": f"{CHRONOSPHERE_DOMAIN}/teams/",
+        "autocomplete": "All Teams",
+    },
+    {
+        "uid": "collections",
+        "type": "default",
+        "title": "All Collections",
+        "arg": f"{CHRONOSPHERE_DOMAIN}/collections/",
+        "autocomplete": "All Collections",
+    },
+    {
+        "uid": "monitors",
+        "type": "default",
+        "title": "All Monitors",
+        "arg": f"{CHRONOSPHERE_DOMAIN}/monitors/",
+        "autocomplete": "All Monitors",
+    },
+]
+
+print(json.dumps({"items": items, "skipknowledge": True}))</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>subtext</key>
+				<string>Search by name</string>
+				<key>title</key>
+				<string>Chronosphere Dashboards</string>
+				<key>type</key>
+				<integer>9</integer>
+				<key>withspace</key>
+				<true/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.scriptfilter</string>
+			<key>uid</key>
+			<string>0FCFC71A-213B-40BF-9BC9-02155788A6FA</string>
+			<key>version</key>
+			<integer>3</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>browser</key>
+				<string></string>
+				<key>skipqueryencode</key>
+				<true/>
+				<key>skipvarencode</key>
+				<true/>
+				<key>spaces</key>
+				<string></string>
+				<key>url</key>
+				<string>{query}</string>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.openurl</string>
+			<key>uid</key>
+			<string>89A59BE0-BFB5-48CA-A5EC-10E7E839BAA7</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+	</array>
+	<key>readme</key>
+	<string># Chronosphere
+
+Search Teams, Collections, Dashboards &amp; Monitors
+
+Make sure to configure your **domain** and [**personal access token**](https://docs.chronosphere.io/administer/accounts-teams/personal-access-tokens) with "Configure Workflow"</string>
+	<key>uidata</key>
+	<dict>
+		<key>0FCFC71A-213B-40BF-9BC9-02155788A6FA</key>
+		<dict>
+			<key>xpos</key>
+			<real>65</real>
+			<key>ypos</key>
+			<real>80</real>
+		</dict>
+		<key>89A59BE0-BFB5-48CA-A5EC-10E7E839BAA7</key>
+		<dict>
+			<key>xpos</key>
+			<real>240</real>
+			<key>ypos</key>
+			<real>80</real>
+		</dict>
+	</dict>
+	<key>userconfigurationconfig</key>
+	<array>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<string>chrono</string>
+				<key>placeholder</key>
+				<string></string>
+				<key>required</key>
+				<true/>
+				<key>trim</key>
+				<true/>
+			</dict>
+			<key>description</key>
+			<string></string>
+			<key>label</key>
+			<string>Trigger Keyword</string>
+			<key>type</key>
+			<string>textfield</string>
+			<key>variable</key>
+			<string>KEYWORD</string>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<string></string>
+				<key>placeholder</key>
+				<string>https://test.chronosphere.io</string>
+				<key>required</key>
+				<true/>
+				<key>trim</key>
+				<true/>
+			</dict>
+			<key>description</key>
+			<string></string>
+			<key>label</key>
+			<string>Chronosphere Domain</string>
+			<key>type</key>
+			<string>textfield</string>
+			<key>variable</key>
+			<string>CHRONOSPHERE_DOMAIN</string>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<string></string>
+				<key>placeholder</key>
+				<string></string>
+				<key>required</key>
+				<true/>
+				<key>trim</key>
+				<true/>
+			</dict>
+			<key>description</key>
+			<string>https://docs.chronosphere.io/administer/accounts-teams/personal-access-tokens</string>
+			<key>label</key>
+			<string>Personal Access Token</string>
+			<key>type</key>
+			<string>textfield</string>
+			<key>variable</key>
+			<string>CHRONOSPHERE_API_TOKEN</string>
+		</dict>
+	</array>
+	<key>variablesdontexport</key>
+	<array/>
+	<key>version</key>
+	<string>1.0</string>
+	<key>webaddress</key>
+	<string>https://chronosphere.io</string>
+</dict>
+</plist>
