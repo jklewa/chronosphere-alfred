@@ -3,7 +3,7 @@
 
 **Search Teams, Collections, Dashboards & Monitors**
 
-[Chronosphere](https://chronosphere.io/) is a cloud native observability platform that provides deep insights into every layer of your stack. Chronosphere for Alfred also you to quickly navigate Dashboards and Monitors from your [Alfred](https://alfredapp.com/) application launcher.
+[Chronosphere](https://chronosphere.io/) is a cloud native observability platform that provides deep insights into every layer of your stack. Chronosphere for Alfred lets you to quickly navigate Dashboards and Monitors from your [Alfred](https://alfredapp.com/) application launcher.
 
 ## Install
 
