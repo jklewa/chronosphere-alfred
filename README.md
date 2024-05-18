@@ -5,6 +5,8 @@
 
 [Chronosphere](https://chronosphere.io/) is a cloud native observability platform that provides deep insights into every layer of your stack. Chronosphere for Alfred lets you to quickly navigate Dashboards and Monitors from your [Alfred](https://alfredapp.com/) application launcher.
 
+![Chronosphere Alfred Search Bar Example](./assets/screenshot.png)
+
 ## Install
 
 In order to use this Workflow you must have [Alfred](https://alfredapp.com/) and the [Alfred Powerpack](https://alfredapp.com/powerpack/).
@@ -15,3 +17,18 @@ To install Chronosphere for Alfred, [download the latest .alfredworklow](https:/
 * Trigger Keyword: `chrono`
 * Chronosphere Domain: `https://custom.chronosphere.io`
 * Personal Access Token: See https://docs.chronosphere.io/administer/accounts-teams/personal-access-tokens
+
+## Usage
+```
+chrono <search_term> - Search all resources
+
+chrono c: <search_term> - Search Collections
+chrono s: <search_term> - Search Services
+chrono d: <search_term> - Search Dashboards
+chrono m: <search_term> - Search Monitors
+chrono t: <search_term> - Search Teams
+```
+
+### Selecting a result will open the resource in your default browser
+
+![Chronosphere Alfred Search Bar Example](./assets/screenshot_search_term.png)
