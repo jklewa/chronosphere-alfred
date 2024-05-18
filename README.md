@@ -5,7 +5,7 @@
 
 [Chronosphere](https://chronosphere.io/) is a cloud native observability platform that provides deep insights into every layer of your stack. Chronosphere for Alfred lets you to quickly navigate Dashboards and Monitors from your [Alfred](https://alfredapp.com/) application launcher.
 
-![Chronosphere Alfred Search Bar Example](./assets/screenshot.png)
+<img src="./assets/screenshot.png" alt="Chronosphere Alfred Search Bar Example" width="600">
 
 ## Install
 
@@ -31,4 +31,4 @@ chrono t: <search_term> - Search Teams
 
 ### Selecting a result will open the resource in your default browser
 
-![Chronosphere Alfred Search Bar Example](./assets/screenshot_search_term.png)
+<img src="./assets/screenshot_search_term.png" alt="Chronosphere Alfred Search Fallbacks" width="600">
