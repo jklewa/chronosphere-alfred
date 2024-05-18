@@ -23,7 +23,7 @@
 	<key>createdby</key>
 	<string></string>
 	<key>description</key>
-	<string>Search Teams, Collections, Dashboards &amp; Monitors</string>
+	<string>Search Collections, Services, Dashboards, Monitors &amp; Teams</string>
 	<key>disabled</key>
 	<false/>
 	<key>name</key>
@@ -58,185 +58,17 @@
 				<key>runningsubtext</key>
 				<string>searching...</string>
 				<key>script</key>
-				<string>"""
-Returns
-{
-  "items": [
-    {
-      "uid": "dashboard-name",
-      "type": "default",
-      "title": "Dashboard Name",
-      "subtitle": "collection-slug",
-      "arg": "https://chronosphere.io/dashboards/dashboard-name",
-      "autocomplete": "Dashboard Name",
-    }
-  ]
-}
-"""
-
-import json
-import sys
-import os
-import urllib.request
-
-if not os.environ.get("CHRONOSPHERE_DOMAIN") or not os.environ.get("CHRONOSPHERE_API_TOKEN"):
-    print(json.dumps({"items": [{"title": "Configure workflow with CHRONOSPHERE_DOMAIN and CHRONOSPHERE_API_TOKEN", "valid": False}]}))
-    sys.exit(1)
-
-CHRONOSPHERE_DOMAIN = os.environ["CHRONOSPHERE_DOMAIN"].rstrip("/").strip()
-CHRONOSPHERE_API_TOKEN = os.environ["CHRONOSPHERE_API_TOKEN"].strip()
-
-gql_query = """
-query Search($input: SearchQuery!) {
-    searchV2(input: $input) {
-        items {
-            type
-            name
-            slug
-            isFavorite
-            isMigratedDashboard
-            team {
-                name
-                slug
-                __typename
-            }
-            collection {
-                name
-                type
-                slug
-                __typename
-            }
-            __typename
-        }
-        totalCount
-        __typename
-    }
-}
-"""
-
-query = sys.argv[1] if len(sys.argv) &gt; 1 else ""
-data = {
-    "query": gql_query,
-    "variables": {
-        "input": {"kindFilter": ["teams", "collections", "dashboards", "monitors"], "query": query},
-    },
-}
-
-# todo: remove this once monitors are better filtered
-# data["variables"]["input"]["kindFilter"] = ["teams", "collections", "dashboards"]
-
-req = urllib.request.Request(
-    f"{CHRONOSPHERE_DOMAIN}/api/v1/gql/query",
-    headers={"API-Token": CHRONOSPHERE_API_TOKEN, "Content-Type": "application/json; charset=utf-8"},
-    data=json.dumps(data).encode("utf-8"),
-    method="POST",
-)
-with urllib.request.urlopen(req) as r:
-   response = r.read()
-
-try:
-	response = json.loads(response)
-except ValueError:
-	print(json.dumps({"items": [{"title": "Failed to parse JSON response", "valid": False}]}))
-	sys.exit(1)
-
-if "data" in response:
-    results = response.get("data", {}).get("searchV2", {}).get("items") or []
-    items = []
-    for item in results:
-        if item["type"] == "dashboards":
-            subtitle = item["team"]["name"]
-            if item.get("collection"):
-                subtitle = f"{subtitle} - {item['collection']['name']}"
-            items.append({
-                "uid": item["slug"],
-                "type": "default",
-                "title": f'Dashboard: {item["name"]}',
-                "subtitle": subtitle,
-                "arg": f"{CHRONOSPHERE_DOMAIN}/dashboards/{item['slug']}",
-                "autocomplete": item["name"],
-            })
-        elif item["type"] == "teams":
-            items.append({
-                "uid": item["slug"],
-                "type": "default",
-                "title": f'Team: {item["name"]}',
-                "subtitle": "Team",
-                "arg": f"{CHRONOSPHERE_DOMAIN}/teams/{item['slug']}",
-                "autocomplete": item["name"],
-            })
-        elif item["type"] == "collections":
-            items.append({
-                "uid": item["slug"],
-                "type": "default",
-                "title": f'Collection: {item["name"]}',
-                "subtitle": item["team"]["name"],
-                "arg": f"{CHRONOSPHERE_DOMAIN}/collections/{item['slug']}",
-                "autocomplete": item["name"],
-            })
-        elif item["type"] == "monitors":
-            subtitle = item["team"]["name"]
-            if item.get("collection"):
-                subtitle = f"{subtitle} - {item['collection']['name']}"
-            items.append({
-                "uid": item["slug"],
-                "type": "default",
-                "title": f'Monitor: {item["name"]}',
-                "subtitle": subtitle,
-                "arg": f"{CHRONOSPHERE_DOMAIN}/monitors/{item['slug']}",
-                "autocomplete": item["name"],
-            })
-else:
-    # No dashboards found, check for error message
-    items = []
-    if "message" in response:
-        items.append({
-            "valid": False,
-            "title": response["message"]
-        })
-
-items += [
-    {
-        "uid": "dashboards",
-        "type": "default",
-        "title": "All Dashboards",
-        "arg": f"{CHRONOSPHERE_DOMAIN}/dashboards/",
-        "autocomplete": "All Dashboards",
-    },
-    {
-        "uid": "teams",
-        "type": "default",
-        "title": "All Teams",
-        "arg": f"{CHRONOSPHERE_DOMAIN}/teams/",
-        "autocomplete": "All Teams",
-    },
-    {
-        "uid": "collections",
-        "type": "default",
-        "title": "All Collections",
-        "arg": f"{CHRONOSPHERE_DOMAIN}/collections/",
-        "autocomplete": "All Collections",
-    },
-    {
-        "uid": "monitors",
-        "type": "default",
-        "title": "All Monitors",
-        "arg": f"{CHRONOSPHERE_DOMAIN}/monitors/",
-        "autocomplete": "All Monitors",
-    },
-]
-
-print(json.dumps({"items": items, "skipknowledge": True}))</string>
+				<string>python3 ./chronosphere_search.py {query}</string>
 				<key>scriptargtype</key>
-				<integer>1</integer>
+				<integer>0</integer>
 				<key>scriptfile</key>
 				<string></string>
 				<key>subtext</key>
-				<string>Search by name</string>
+				<string>Search Collections, Services, Dashboards, Monitors &amp; Teams</string>
 				<key>title</key>
-				<string>Chronosphere Dashboards</string>
+				<string>Chronosphere Search</string>
 				<key>type</key>
-				<integer>9</integer>
+				<integer>5</integer>
 				<key>withspace</key>
 				<true/>
 			</dict>
@@ -270,9 +102,9 @@ print(json.dumps({"items": items, "skipknowledge": True}))</string>
 		</dict>
 	</array>
 	<key>readme</key>
-	<string># Chronosphere
+	<string># Chronosphere for Alfred
 
-Search Teams, Collections, Dashboards &amp; Monitors
+Search Collections, Services, Dashboards, Monitors &amp; Teams
 
 Make sure to configure your **domain** and [**personal access token**](https://docs.chronosphere.io/administer/accounts-teams/personal-access-tokens) with "Configure Workflow"</string>
 	<key>uidata</key>

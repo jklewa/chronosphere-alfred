@@ -1,7 +1,7 @@
 # Chronosphere for Alfred [[Download Workflow](https://github.com/jklewa/chronosphere-alfred/releases/latest)]
 *Feedback or issue? [File an issue](https://github.com/jklewa/chronosphere-alfred/issues)*
 
-**Search Teams, Collections, Dashboards & Monitors**
+**Search Collections, Services, Dashboards, Monitors & Teams**
 
 [Chronosphere](https://chronosphere.io/) is a cloud native observability platform that provides deep insights into every layer of your stack. Chronosphere for Alfred lets you to quickly navigate Dashboards and Monitors from your [Alfred](https://alfredapp.com/) application launcher.
 
