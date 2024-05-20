@@ -1,4 +1,9 @@
 # Chronosphere for Alfred [[Download Workflow](https://github.com/jklewa/chronosphere-alfred/releases/latest)]
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/jklewa/chronosphere-alfred/total?logo=github)
+![GitHub last commit (branch)](https://img.shields.io/github/last-commit/jklewa/chronosphere-alfred/main)
+![GitHub repo size](https://img.shields.io/github/repo-size/jklewa/chronosphere-alfred)
+![GitHub Release](https://img.shields.io/github/v/release/jklewa/chronosphere-alfred?include_prereleases)
+
 *Feedback or issue? [File an issue](https://github.com/jklewa/chronosphere-alfred/issues)*
 
 **Search Collections, Services, Dashboards, Monitors & Teams**
